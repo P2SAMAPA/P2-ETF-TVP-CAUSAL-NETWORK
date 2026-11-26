@@ -6,9 +6,9 @@ Variants and competitors on identical (day, ETF) rows:
   tv_nofactor  the same without factor adjustment            static_net  the same with a fixed network (no time variation)
   roll_var     a ridge VAR on the last 60 days (no sparsity)  roll_ridge / fixed_ridge / lgbm / momentum: feature-based models of the earlier engines
 The network variants ABSTAIN on days when they select no edges (IC counted as 0, no trade); the share of active days is reported.
-Network CHANGE probability: P(the directed network moves materially over the next CHANGE_K sessions), a logistic model on the network's own recent
-behaviour and market conditions; scored by AUC and Brier skill against the base rate, against a "recent change persists" baseline, and as a
-confidence gate for the forecasts.
+Network CHANGE probability: P(the network moves materially over the next CHANGE_K sessions), a logistic model on the network's own recent
+behaviour and market conditions (undirected target = primary, always defined; directed = secondary); scored by AUC and Brier skill against the base
+rate, against a "recent change persists" score, and as a confidence gate for the forecasts.
 """
 
 import numpy as np
@@ -147,7 +147,7 @@ def estimate_grid(panel: Dict, grid: List[int], undirected: bool = True, variant
     return out
 
 
-def forecast_scores(panel: Dict, fits: Dict, grid: List[int], days) -> (np.ndarray, np.ndarray):
+def forecast_scores(panel: Dict, fits: Dict, grid: List[int], days):
     Z = panel["Z"]
     n, E = Z.shape
     sc = np.full((n, E), np.nan); active = np.zeros(n, bool)
@@ -168,12 +168,8 @@ def forecast_scores(panel: Dict, fits: Dict, grid: List[int], days) -> (np.ndarr
 # ---------------------------------------------------------------------------
 # Network-change probability
 # ---------------------------------------------------------------------------
-def _dist(a, b):
-    return N.change_distance(a, b)
-
-
 def change_dataset(panel: Dict, fits: Dict, grid: List[int]):
-    """Per grid index m: the label (did the directed network move materially over the next CHANGE_K sessions) and the features known at g_m."""
+    """Per grid index m: features known at g_m and the forward distances (directed, undirected) over the next CHANGE_K sessions."""
     kk = max(config.CHANGE_K // config.GRID_STEP, 1)
     F = fits["tv_net"]
     ms = [m for m, g in enumerate(grid) if g in F]
@@ -186,19 +182,19 @@ def change_dataset(panel: Dict, fits: Dict, grid: List[int]):
         g = grid[m]
         if (m - kk) not in A:
             continue
-        dA = _dist(A[m - kk], A[m])
-        dP = _dist(P[m - kk], P[m]) if (P.get(m - kk) is not None and P.get(m) is not None) else 0.0
+        dA = N.change_distance(A[m - kk], A[m])
+        dP = N.change_distance(P[m - kk], P[m]) if (P.get(m - kk) is not None and P.get(m) is not None) else 0.0
         pm = P.get(m)
         feat = [dA, dP, nE[m], float(np.linalg.norm(A[m])), float(np.abs(pm).mean()) if pm is not None else 0.0, nE[m] - nE[m - kk],
                 float(U[g, 4]), float(U[g, 7]), float(U[g, 8]), float(U[g, 10])]
-        futA = _dist(A[m], A[m + kk]) if (m + kk) in A else np.nan
-        futP = _dist(P[m], P[m + kk]) if (P.get(m) is not None and P.get(m + kk) is not None) else np.nan
+        futA = N.change_distance(A[m], A[m + kk]) if (m + kk) in A else np.nan
+        futP = N.change_distance(P[m], P[m + kk]) if (P.get(m) is not None and P.get(m + kk) is not None) else np.nan
         rows.append((m, g, feat, futA, futP))
     return rows
 
 
 def change_walk_forward(rows, grid, eval_lo_g: int, k_ahead: int, which: int = 3, persist_col: int = 0):
-    """Expanding logistic model; labels are known only k_ahead grid steps later. Returns arrays over rows (aligned): p (nan before the first fit), label, base."""
+    """Expanding logistic model; labels are known only k_ahead grid steps later. Returns p, label, base rate, persistence score (aligned to rows)."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.preprocessing import StandardScaler
     m_arr = np.array([r[0] for r in rows]); X = np.array([r[2] for r in rows], float); fut = np.array([r[which] for r in rows], float)
@@ -226,7 +222,7 @@ def change_walk_forward(rows, grid, eval_lo_g: int, k_ahead: int, which: int = 3
             p[i] = float(model.predict_proba(scaler.transform(X[i:i + 1]))[0, 1])
         known = label[:i][np.isfinite(label[:i]) & ((m_arr[:i] + k_ahead) <= m_arr[i])]
         base[i] = float(known.mean()) if len(known) else np.nan
-        p_persist[i] = float(X[i, persist_col]) if i > 20 else np.nan          # the same kind of change over the previous CHANGE_K sessions (a continuous score)
+        p_persist[i] = float(X[i, persist_col]) if i > 20 else np.nan          # the same kind of change over the previous CHANGE_K sessions
     return p, label, base, p_persist
 
 
@@ -262,8 +258,8 @@ def run_walk_forward(panel: Dict, eval_days: int = None, fit_lgbm: bool = True, 
     scores, active = {}, {}
     for v in ("tv_net", "tv_nofactor", "static_net", "roll_var"):
         scores[v], active[v] = forecast_scores(panel, fits[v], grid, days)
-    starts = list(range(d0, d1, config.REFIT_DAYS if hasattr(config, "REFIT_DAYS") else 252))
-    blocks = [list(range(b, min(b + 252, d1))) for b in starts]
+    starts = list(range(d0, d1, config.REFIT_DAYS))
+    blocks = [list(range(b, min(b + config.REFIT_DAYS, d1))) for b in starts]
     scores["roll_ridge"] = rolling_ridge(panel, days)
     scores["fixed_ridge"], scores["lgbm"] = fixed_models(panel, starts, blocks, fit_lgbm=fit_lgbm)
     scores["momentum"] = np.where(panel["valid"], panel["X"][:, :, 2], np.nan)

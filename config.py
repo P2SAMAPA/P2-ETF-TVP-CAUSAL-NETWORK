@@ -50,7 +50,7 @@ MIN_OBS = 250
 LAM_FRACS = (0.1, 0.2, 0.3, 0.45, 0.6, 0.75, 0.9)   # candidate penalties as fractions of lambda_max, chosen on a time-ordered hold-out
 VAL_FRAC = 0.2
 EDGE_T = 2.5                 # after the unshrunk refit an edge must have |t| >= EDGE_T to be kept (precision)
-VAL_Z = 2.0                   # the best candidate must beat the empty network by this many standard errors on the hold-out
+VAL_Z = 2.0                  # the best candidate must beat the empty network by this many standard errors on the hold-out
 ADAPT_GAMMA = 1.0            # adaptive group weights = 1 / (pilot group norm)^gamma
 FISTA_ITERS = 150
 N_FACTORS = 2                # leading principal factors removed before the VAR (factor adjustment)
@@ -59,7 +59,7 @@ ROLL_RIDGE_WINDOW = 60       # competitor: ridge VAR on the last 60 days
 VAR_RIDGE = 5.0
 
 # Network-change probability
-CHANGE_K = 10                # "the next few sessions": the structure is compared GRID_STEP-multiples ahead (10 sessions)
+CHANGE_K = 10                # "the next few sessions": the structure is compared CHANGE_K sessions ahead
 CHANGE_QUANTILE = 0.75       # a change is a distance above the expanding 75th percentile of past distances (base rate ~25%)
 CHANGE_REFIT_GRID = 12       # refit the logistic model every 12 grid steps (~ 60 days)
 CHANGE_MIN_TRAIN = 40
@@ -67,6 +67,7 @@ CHANGE_MIN_TRAIN = 40
 # Walk-forward evaluation
 EVAL_YEARS = 5.0
 MIN_HISTORY_DAYS = 756
+REFIT_DAYS = 252
 RIDGE_ALPHA = 100.0
 ROLL_RIDGE_ALPHA = 100.0
 ROLL_WINDOW = 60

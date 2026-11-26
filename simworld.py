@@ -58,8 +58,8 @@ def make_world(kind: str, n: int = 1000, E: int = 20, amp: float = 0.16, seed: i
         acts.append(s); A_true[:, j, i] = sgn * amp * s
     if kind in ("null", "confound"):
         A_true[:] = 0.0
-    # partial-correlation network: base edges, with a few toggled at random times in the tv world
-    adj_base = np.zeros((E, E)); 
+    # partial-correlation network: base edges, with a few toggled in the tv / trigger worlds
+    adj_base = np.zeros((E, E))
     for _ in range(8):
         a, b = rng.choice(E, 2, replace=False); adj_base[a, b] = adj_base[b, a] = 1.0
     toggles = [tuple(rng.choice(E, 2, replace=False)) for _ in range(3)] if kind in ("tv", "trigger") else []

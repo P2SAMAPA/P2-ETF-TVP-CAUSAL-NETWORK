@@ -4,9 +4,10 @@ network.py  —  Time-varying directed and undirected networks from a locally st
 At a grid day g the estimate uses ONLY returns through the close of g. Pairs (x = Z[t-1], y = Z[t]) for t <= g are weighted by a ONE-sided
 exponential kernel; the coefficients are LOCAL-LINEAR (level + slope in (t-g)/h), and for every predictor j and target i the pair (level, slope)
 is one GROUP in an adaptively weighted group LASSO (weights from a ridge pilot), so an edge is kept or dropped as a whole — the "locally weighted
-group sparsity" of the cited paper. The penalty is chosen on a time-ordered hold-out (the most recent VAL_FRAC of the window), with "no edges"
-as a candidate: if nothing predicts better than zero out of sample, the network is empty. Selected edges are refit without shrinkage
-(post-selection). Highly correlated ETFs are handled by projecting out the leading principal factors first.
+group sparsity" of the cited paper. The penalty is chosen on a time-ordered hold-out (the most recent VAL_FRAC of the window); "no edges" is a
+candidate and is left only if the best candidate beats it by VAL_Z standard errors (then the sparsest penalty within one standard error is taken).
+Selected edges are refit without shrinkage and kept only if their own t-statistic is >= EDGE_T. Highly correlated ETFs are handled by projecting
+out the leading principal factors first.
 
 The undirected network is the precision matrix of the VAR residuals (graphical lasso on the kernel-weighted residual correlation): partial
 correlations, i.e. conditional dependence that remains after the directed edges and the factors are accounted for.
@@ -147,11 +148,11 @@ def fit_directed(Z: np.ndarray, g: int, h: float, factor: bool = True, local_lin
         s2 = float((w * res ** 2).sum() / w.sum())
         se = np.sqrt(np.maximum(s2 * np.diag(Gi)[:len(S)] / m_eff, 1e-18))
         keep[i, S] = np.abs(Bd[S, i] / se) >= config.EDGE_T
-        for j in S[~keep[i, S]]:                                                        # drop edges that fail the t-test and refit the rest
+        for j in S[~keep[i, S]]:                                                        # drop edges that fail the t-test
             Bd[j, i] = 0.0
             if ll:
                 Bd[j + E, i] = 0.0
-    A = Bd[:E].T
+    A = Bd[:E].T                                                                        # A[i,j]: effect of x_j on y_i at the end of the window
     mask = keep & (np.abs(A) > 0)
     A = np.where(mask, A, 0.0)
     out.update({"A": A, "mask": mask, "n_edges": int(mask.sum() - np.trace(mask)), "B": Bd, "_win": (Xt, Y, w)})
@@ -163,11 +164,8 @@ def fit_undirected(fit: Dict, alpha: float = None) -> Optional[Dict]:
     from sklearn.covariance import graphical_lasso
     alpha = config.GLASSO_ALPHA if alpha is None else alpha
     if "_win" not in fit:
-        Xt, Y, w = None, None, None
-    else:
-        Xt, Y, w = fit["_win"]
-    if Xt is None:
         return None
+    Xt, Y, w = fit["_win"]
     eps = Y - Xt @ fit["B"]
     S = (eps * w[:, None]).T @ eps / w.sum()
     d = np.sqrt(np.maximum(np.diag(S), 1e-9))

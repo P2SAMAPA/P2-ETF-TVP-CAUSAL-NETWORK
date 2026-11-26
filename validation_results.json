@@ -111,7 +111,21 @@
     "u_precision": 0.4257178526841448,
     "u_recall": 0.44
    },
-   "seconds": 54
+   "edges_static": {
+    "tp": 0.0,
+    "fp": 0.0,
+    "fn": 0.0,
+    "utp": 0.0,
+    "ufp": 0.0,
+    "ufn": 0.0,
+    "fits": 100.0,
+    "empty_share": 1.0,
+    "precision": null,
+    "recall": null,
+    "u_precision": null,
+    "u_recall": null
+   },
+   "seconds": 64
   },
   {
    "world": "confound",
@@ -220,7 +234,21 @@
     "u_precision": 0.4592326139088729,
     "u_recall": 0.4941935483870968
    },
-   "seconds": 52
+   "edges_static": {
+    "tp": 0.0,
+    "fp": 0.0,
+    "fn": 0.0,
+    "utp": 0.0,
+    "ufp": 0.0,
+    "ufn": 0.0,
+    "fits": 100.0,
+    "empty_share": 1.0,
+    "precision": null,
+    "recall": null,
+    "u_precision": null,
+    "u_recall": null
+   },
+   "seconds": 59
   },
   {
    "world": "static",
@@ -329,7 +357,21 @@
     "u_precision": 0.43593130779392336,
     "u_recall": 0.4258064516129032
    },
-   "seconds": 67
+   "edges_static": {
+    "tp": 567.0,
+    "fp": 20.0,
+    "fn": 33.0,
+    "utp": 0.0,
+    "ufp": 0.0,
+    "ufn": 0.0,
+    "fits": 100.0,
+    "empty_share": 0.02,
+    "precision": 0.9659284497444633,
+    "recall": 0.945,
+    "u_precision": null,
+    "u_recall": null
+   },
+   "seconds": 60
   },
   {
    "world": "tv",
@@ -438,7 +480,21 @@
     "u_precision": 0.4507042253521127,
     "u_recall": 0.3382663847780127
    },
-   "seconds": 67
+   "edges_static": {
+    "tp": 135.0,
+    "fp": 197.0,
+    "fn": 180.0,
+    "utp": 0.0,
+    "ufp": 0.0,
+    "ufn": 0.0,
+    "fits": 100.0,
+    "empty_share": 0.41000000000000003,
+    "precision": 0.4066265060240964,
+    "recall": 0.42857142857142855,
+    "u_precision": null,
+    "u_recall": null
+   },
+   "seconds": 48
   },
   {
    "world": "trigger",
@@ -547,7 +603,21 @@
     "u_precision": 0.37944162436548223,
     "u_recall": 0.3325917686318131
    },
-   "seconds": 63
+   "edges_static": {
+    "tp": 17.0,
+    "fp": 35.0,
+    "fn": 211.0,
+    "utp": 0.0,
+    "ufp": 0.0,
+    "ufn": 0.0,
+    "fits": 100.0,
+    "empty_share": 0.87,
+    "precision": 0.3269230769230769,
+    "recall": 0.07456140350877193,
+    "u_precision": null,
+    "u_recall": null
+   },
+   "seconds": 60
   }
  ]
 }
